@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: smart-route-ai
+    runtime: python
+    buildCommand: "pip install -r requirements.txt && cd gdp-prototype--main && npm install && npm run build"
+    startCommand: "python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        value: "sqlite:///./logistics.db"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_VERSION
+        value: "20.x"
+      - key: PYTHON_VERSION
+        value: "3.11"
