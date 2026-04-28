@@ -73,32 +73,44 @@ def health_check():
     return {"status": "healthy", "database": os.getenv("DATABASE_URL", "sqlite")[:6]}
 
 # Serve static files from the React frontend build
-frontend_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "gdp-prototype--main", "dist"))
+# We use an absolute path resolved at startup
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+frontend_path = os.path.join(BASE_DIR, "gdp-prototype--main", "dist")
 
-print(f"Serving frontend from: {frontend_path}")
-print(f"Database URL: {os.getenv('DATABASE_URL', 'sqlite:///./logistics.db')}")
+print(f"--- Startup Audit ---")
+print(f"Base Directory: {BASE_DIR}")
+print(f"Frontend Path Target: {frontend_path}")
+print(f"Frontend Path Exists: {os.path.exists(frontend_path)}")
+if os.path.exists(frontend_path):
+    print(f"Contents of Frontend Path: {os.listdir(frontend_path)}")
+print(f"---------------------")
 
 if os.path.exists(frontend_path):
     app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="static")
-else:
-    print("Warning: Frontend dist folder not found. React app will not be served.")
 
 @app.get("/")
 def root():
     index_path = os.path.join(frontend_path, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    return {"message": "Smart Supply Chain Logistics API is running. Frontend build missing."}
+    return {
+        "message": "Smart Supply Chain Logistics API is ONLINE",
+        "status": "ready",
+        "frontend": "Not found in /gdp-prototype--main/dist. Please ensure build command ran successfully.",
+        "note": "If you just deployed, wait 2-3 minutes for the build to finish."
+    }
 
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
-    # Check if the path exists as a static file
+    # Skip API routes
+    if full_path.startswith("auth") or full_path.startswith("gps") or full_path.startswith("trips"):
+        return {"error": "API route not found"}
+        
     file_path = os.path.join(frontend_path, full_path)
     if os.path.exists(file_path) and os.path.isfile(file_path):
         return FileResponse(file_path)
     
-    # Fallback to index.html for React Router
     index_path = os.path.join(frontend_path, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    return {"error": "Path not found"}
+    return {"error": f"Path '{full_path}' not found and frontend build missing."}
