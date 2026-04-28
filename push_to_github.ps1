@@ -26,8 +26,8 @@ Write-Host "Setting up remote..." -ForegroundColor Cyan
 & $git remote add origin $repoUrl 2>$null
 & $git remote set-url origin $repoUrl
 
-Write-Host "Pushing to GitHub..." -ForegroundColor Cyan
+Write-Host "Pushing to GitHub (Force)..." -ForegroundColor Cyan
 & $git branch -M main
-& $git push -u origin main
+& $git push -u origin main --force
 
 Write-Host "Done! Your code should now be on GitHub." -ForegroundColor Green
