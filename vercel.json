@@ -6,9 +6,11 @@
       "use": "@vercel/python"
     },
     {
-      "src": "gdp-prototype--main/package.json",
+      "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": {
+        "distDir": "gdp-prototype--main/dist"
+      }
     }
   ],
   "routes": [
@@ -33,13 +35,17 @@
       "dest": "api/index.py"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "/gdp-prototype--main/dist/assets/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "gdp-prototype--main/$1",
+      "dest": "api/index.py",
       "check": true
     },
     {
       "src": "/(.*)",
-      "dest": "gdp-prototype--main/index.html"
+      "dest": "gdp-prototype--main/dist/index.html"
     }
   ]
 }
