@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "gdp-prototype--main/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/auth/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/gps/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/trips/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/alerts/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/predict/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "gdp-prototype--main/$1",
+      "check": true
+    },
+    {
+      "src": "/(.*)",
+      "dest": "gdp-prototype--main/index.html"
+    }
+  ]
+}
