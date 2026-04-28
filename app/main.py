@@ -7,12 +7,42 @@ import os
 from app.routes import auth_routes, gps_routes, external_routes, prediction_routes, route_routes, ws_routes, trip_routes, alert_routes
 from app.services.ml_model import predictor
 from app.services.simulator import simulator
+from app.auth.security import get_password_hash
 import contextlib
 
-@contextlib.asynccontextmanager
+def seed_data():
+    from app.db.database import SessionLocal
+    from app.models import domain
+    db = SessionLocal()
+    try:
+        # Seed test user
+        if not db.query(domain.User).filter(domain.User.username == "test@test.com").first():
+            hashed_pw = get_password_hash("password123")
+            user = domain.User(username="test@test.com", hashed_password=hashed_pw)
+            db.add(user)
+            db.commit()
+            print("Seeded test user: test@test.com")
+
+        # Seed initial trucks if none exist
+        if db.query(domain.Truck).count() == 0:
+            trucks = [
+                domain.Truck(license_plate="TRK-7721", driver_name="Alex Rivera", status="In Transit"),
+                domain.Truck(license_plate="TRK-9902", driver_name="Sarah Chen", status="In Transit"),
+                domain.Truck(license_plate="TRK-4410", driver_name="Marcus Thorne", status="Idle"),
+                domain.Truck(license_plate="TRK-1123", driver_name="Priya Sharma", status="In Transit"),
+            ]
+            db.add_all(trucks)
+            db.commit()
+            print("Seeded initial trucks")
+    except Exception as e:
+        print(f"Seeding error: {e}")
+    finally:
+        db.close()
+
 async def lifespan(app: FastAPI):
     # Startup
     Base.metadata.create_all(bind=engine)
+    seed_data()
     predictor.load_or_train_model()
     simulator.start()
     yield
