@@ -73,30 +73,47 @@ def health_check():
     return {"status": "healthy", "database": os.getenv("DATABASE_URL", "sqlite")[:6]}
 
 # Serve static files from the React frontend build
-# We use an absolute path resolved at startup
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-frontend_path = os.path.join(BASE_DIR, "gdp-prototype--main", "dist")
+
+# Check multiple possible locations for the 'dist' folder
+possible_dist_paths = [
+    os.path.join(BASE_DIR, "dist"), # Root dist (moved by render.yaml)
+    os.path.join(BASE_DIR, "gdp-prototype--main", "dist"), # Original location
+]
+
+frontend_path = None
+for p in possible_dist_paths:
+    if os.path.exists(p):
+        frontend_path = p
+        break
 
 print(f"--- Startup Audit ---")
 print(f"Base Directory: {BASE_DIR}")
-print(f"Frontend Path Target: {frontend_path}")
-print(f"Frontend Path Exists: {os.path.exists(frontend_path)}")
-if os.path.exists(frontend_path):
-    print(f"Contents of Frontend Path: {os.listdir(frontend_path)}")
+if frontend_path:
+    print(f"Frontend Found at: {frontend_path}")
+    print(f"Contents: {os.listdir(frontend_path)}")
+else:
+    print(f"CRITICAL: Frontend 'dist' folder not found in any of: {possible_dist_paths}")
 print(f"---------------------")
 
-if os.path.exists(frontend_path):
+if frontend_path:
     app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="static")
 
 @app.get("/")
 def root():
-    index_path = os.path.join(frontend_path, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
+    if frontend_path:
+        index_path = os.path.join(frontend_path, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+    
     return {
         "message": "Smart Supply Chain Logistics API is ONLINE",
-        "status": "ready",
-        "frontend": "Not found in /gdp-prototype--main/dist. Please ensure build command ran successfully.",
+        "status": "waiting_for_frontend",
+        "debug_info": {
+            "base_dir": BASE_DIR,
+            "frontend_found": frontend_path is not None,
+            "searched_paths": possible_dist_paths
+        },
         "note": "If you just deployed, wait 2-3 minutes for the build to finish."
     }
 
